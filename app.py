@@ -209,5 +209,5 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
         True
 
 # uncomment below for development and debugging
-if __name__ == '__main__':
-    app.run_server(port='8051', host='0.0.0.0', debug=True)
+# if __name__ == '__main__':
+#     app.run_server(port='8051', host='0.0.0.0', debug=True)

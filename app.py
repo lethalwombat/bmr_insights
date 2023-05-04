@@ -194,7 +194,7 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             method=bmr_formula_input, age=input_age, gender=input_gender, height=input_height, weight=input_weight, bf=input_bf)
         return \
             bmr_results_table(headers, bmr_result, deficit=deficit),\
-            macros_table(macro_headers, bmr_result, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
+            macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
             False,\
             False,\

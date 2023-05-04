@@ -27,5 +27,5 @@ COPY helpers.py helpers.py
 EXPOSE 8051
 
 # entrypoint to the application
-CMD ["python", "app.py"]
-# CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:server"]
+# CMD ["python", "app.py"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8051", "app:server"]

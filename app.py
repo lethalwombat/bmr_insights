@@ -44,6 +44,12 @@ bmr_inputs = html.Div([
     dbc.InputGroup([
         dbc.InputGroupText('Estimated bodyfat %'), dbc.Input(id='input-bf', disabled=True, type="number", min=5, max=40, step=1)
     ], class_name ='mb-2', size='sm'),
+    dbc.InputGroup([
+        dbc.InputGroupText('Lean mass'), dbc.Input(id='input-lean-mass', disabled=True, type="text")
+    ], class_name ='mb-2', size='sm'),
+    dbc.InputGroup([
+        dbc.InputGroupText('Fat mass'), dbc.Input(id='input-fat-mass', disabled=True, type="text")
+    ], class_name ='mb-2', size='sm'),
     dbc.Button('Update results', id='bmr-calculate', n_clicks=0, size='sm', disabled=True)
 ])
 
@@ -141,9 +147,11 @@ def update_bmr_inputs(value):
         ]
     return input_states.get(value)
 
-# callback for bmr calculate button state
+# callback for bmr calculate button state and lean and fat mass
 @app.callback(
     Output('bmr-calculate', 'disabled'),
+    Output('input-lean-mass', 'value'),
+    Output('input-fat-mass', 'value'),
     Input('bmr-formula-input', 'value'),
     Input('input-age', 'value'),
     Input('input-gender', 'value'),
@@ -162,11 +170,16 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     }
     # nothing selected yet
     if required_inputs.get(bmr_formula_input_value) is None:
-        return True
-    # don't have all inputs yet
+        return True, '', ''
+    # we have all the inputs
     elif not any(elem is None for elem in required_inputs.get(bmr_formula_input_value)):
-        return False
-    return True
+        if bmr_formula_input_value == '2':
+            return False,\
+                '{0:,.1f} kg'.format(input_weight_value*(100-input_bf_value)/100),\
+                '{0:,.1f} kg'.format(input_weight_value*(input_bf_value)/100)
+        return False, '', ''
+    # calculate lean and fat mass if bodyfat is provided
+    return True, '', ''
 
 # callback for calorie levels
 @app.callback(
@@ -227,5 +240,5 @@ def disable_buttons(bmr_calculated_disabled):
     return [False for _ in range(4)]
 
 # uncomment below for development and debugging
-# if __name__ == '__main__':
-#     app.run_server(port='8051', host='0.0.0.0', debug=True)
+if __name__ == '__main__':
+    app.run_server(port='8051', host='0.0.0.0', debug=True)

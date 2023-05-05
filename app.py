@@ -4,18 +4,18 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 
-from helpers import bmr_results_table, macros_table, bmr_engine, activity_levels
+from helpers import blank_table, bmr_results_table, weight_loss_table, macros_table, bmr_engine, activity_levels
 
 # app set-up
-app = Dash(__name__, external_stylesheets=[dbc.themes.YETI])
-app.title = 'BMR Insights'
+app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+app.title = 'BMR Calculator'
 server = app.server
 
-
 # application components
-
 # bmr calculator inputs
 bmr_inputs = html.Div([
+    html.Br(),
+    html.H4('Inputs', style={'color' : 'green', 'text-align' : 'center'}),
     dbc.InputGroup([
         dbc.InputGroupText('BMR formula'),
         dbc.Select(id='bmr-formula-input',
@@ -44,20 +44,29 @@ bmr_inputs = html.Div([
     dbc.InputGroup([
         dbc.InputGroupText('Estimated bodyfat %'), dbc.Input(id='input-bf', disabled=True, type="number", min=5, max=40, step=1)
     ], class_name ='mb-2', size='sm'),
-    dbc.Button('Calculate', id='bmr-calculate', n_clicks=0, size='sm', disabled=True)
+    dbc.Button('Update results', id='bmr-calculate', n_clicks=0, size='sm', disabled=True)
 ])
 
 # energy needs table
 energy_needs = html.Div([
+    html.Br(),
+    html.H4('Energy needs', style={'color' : 'green', 'text-align' : 'center'}),
     html.Div(id='table-energy-needs'),
+    html.Div(id='table-weight-loss'),
     dbc.InputGroup([
         dbc.InputGroupText('Calorie deficit'), dbc.Input(id='input-calorie-deficit', type="number", min=0, max=1000, step=100, value=500)
     ], class_name ='mb-2', size='sm'),
 ])
 
-# macros table
+# macros and weight loss tables
 macros = html.Div([
+    html.Br(),
+    html.H4('Macros', style={'color' : 'green', 'text-align' : 'center'}),    
     html.Div(id='table-macros'),
+    # html.Div([
+    #     html.H4('7777 kcal', style={'color' : 'blue', 'text-align' : 'center'})
+    # ]),
+    html.Div(id='bmr-result-calories'),
     dbc.InputGroup([
         dbc.InputGroupText('Activity level'), dbc.Select(id='input-activity-level', options=[
             {'label' : level, "value" : count} for count, level in enumerate(activity_levels)
@@ -76,13 +85,13 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             bmr_inputs
-        ]),
+        ], width=4),
         dbc.Col([
             energy_needs
-        ]),
+        ], width=4),
         dbc.Col([
             macros
-        ]),        
+        ], width=4),        
     ])
 ], fluid=True)
 
@@ -162,11 +171,9 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
 # callback for calorie levels
 @app.callback(
     Output('table-energy-needs', 'children'),
-    Output('table-macros', 'children'),    
-    Output('input-calorie-deficit', 'disabled'),
-    Output('input-activity-level', 'disabled'),
-    Output('input-protein-kg', 'disabled'),
-    Output('input-fat-kg', 'disabled'),    
+    Output('table-weight-loss', 'children'),    
+    Output('table-macros', 'children'),
+    Output('bmr-result-calories', 'children'),
     Input('bmr-calculate', 'n_clicks'),
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
@@ -184,7 +191,8 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
     
     headers = ['Activity level', 'Maintenance', 'Weight loss']
     macro_headers = ['Protein', 'Carbs', 'Fats']
-    trigger = callback_context.triggered[0]['prop_id'].split('.')[0]
+    wl_headers = ['Energy deficit', 'Estimated weekly weight loss']
+    trigger = callback_context.triggered[0]['prop_id'].split('.')[0]        
     if trigger in ['bmr-calculate', 'input-calorie-deficit', 'input-activity-level', 'input-protein-kg', 'input-fat-kg']:
         _activity_levels = list(activity_levels.keys())
         deficit = deficit_value
@@ -192,21 +200,31 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             deficit = 0
         bmr_result = bmr_engine(
             method=bmr_formula_input, age=input_age, gender=input_gender, height=input_height, weight=input_weight, bf=input_bf)
+        calories_result = bmr_result * activity_levels.get(_activity_levels[int(activity_level_value)]) - deficit
         return \
             bmr_results_table(headers, bmr_result, deficit=deficit),\
+            weight_loss_table(wl_headers, bmr_result, activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
             macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
-            False,\
-            False,\
-            False,\
-            False
+            html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'})
     return \
-        bmr_results_table(headers, 0, blank=True),\
-        macros_table(macro_headers, 0, blank=True),\
-        True,\
-        True,\
-        True,\
-        True
+        blank_table(headers, rows=1),\
+        blank_table(wl_headers, rows=1),\
+        blank_table(macro_headers, rows=1),\
+        html.Br()
+
+# disable input buttons if no proper input is available
+@app.callback(
+    Output('input-calorie-deficit', 'disabled'),
+    Output('input-activity-level', 'disabled'),
+    Output('input-protein-kg', 'disabled'),
+    Output('input-fat-kg', 'disabled'),    
+    Input('bmr-calculate', 'disabled'),
+)
+def disable_buttons(bmr_calculated_disabled):
+    if bmr_calculated_disabled:
+        return [True for _ in range(4)]
+    return [False for _ in range(4)]
 
 # uncomment below for development and debugging
 # if __name__ == '__main__':

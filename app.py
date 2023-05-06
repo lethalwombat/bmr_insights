@@ -69,9 +69,6 @@ macros = html.Div([
     html.Br(),
     html.H4('Macros', style={'color' : 'green', 'text-align' : 'center'}),    
     html.Div(id='table-macros'),
-    # html.Div([
-    #     html.H4('7777 kcal', style={'color' : 'blue', 'text-align' : 'center'})
-    # ]),
     html.Div(id='bmr-result-calories'),
     dbc.InputGroup([
         dbc.InputGroupText('Activity level'), dbc.Select(id='input-activity-level', options=[

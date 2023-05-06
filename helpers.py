@@ -77,3 +77,8 @@ def weight_loss_table(headers: list, bmr_result: int, deficit=500, activity_leve
             table_row('{:.1%}'.format(energy_deficit), '{0:,.3f} kg'.format(weekly_weight_loss)) for _ in range(1)])
         ]
     return dbc.Table(table_header + table_body, bordered=bordered)
+
+
+def calories_to_steps(calories, weight):
+    per_step = (weight * 0.55) / 1000
+    return calories / per_step

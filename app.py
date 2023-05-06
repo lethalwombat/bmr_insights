@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 
-from helpers import blank_table, bmr_results_table, weight_loss_table, macros_table, bmr_engine, activity_levels
+from helpers import blank_table, bmr_results_table, weight_loss_table, macros_table, bmr_engine, activity_levels, calories_to_steps
 
 # app set-up
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
@@ -75,6 +75,9 @@ macros = html.Div([
         dbc.InputGroupText('Activity level'), dbc.Select(id='input-activity-level', options=[
             {'label' : level, "value" : count} for count, level in enumerate(activity_levels)
         ], value=3)
+    ], class_name ='mb-2', size='sm'),
+    dbc.InputGroup([
+        dbc.InputGroupText('Daily steps'), dbc.Input(id='input-daily-steps', type='text', disabled=True)
     ], class_name ='mb-2', size='sm'),
     dbc.InputGroup([
         dbc.InputGroupText('Protein per kg'),  dbc.Input(id='input-protein-kg', type="number", min=1, max=3, step=0.1, value=2)
@@ -190,6 +193,7 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Output('bmr-result-calories', 'children'),
     Output('macros-pie-chart', 'children'),
     Output('pie-chart-title', 'children'),
+    Output('input-daily-steps', 'value'),
     Input('bmr-calculate', 'n_clicks'),
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
@@ -241,13 +245,15 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
             html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
             html.Div(dcc.Graph(figure=fig), style={'border' : '1px grey dotted'}),\
-            'Energy breakdown'
+            'Energy breakdown',\
+            '{0:,.0f}'.format(calories_to_steps(calories_result-bmr_result, input_weight))
     return \
         blank_table(headers, rows=1),\
         blank_table(wl_headers, rows=1),\
         blank_table(macro_headers, rows=1),\
         html.Br(),\
         html.Br(),\
+        '',\
         ''
 
 # disable input buttons if no proper input is available

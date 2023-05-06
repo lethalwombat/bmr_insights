@@ -1,8 +1,8 @@
 import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html, Input, Output, State, callback_context
 import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
-import numpy as np
 
 from helpers import blank_table, bmr_results_table, weight_loss_table, macros_table, bmr_engine, activity_levels, calories_to_steps
 
@@ -63,6 +63,7 @@ energy_needs = html.Div([
     dbc.InputGroup([
         dbc.InputGroupText('Calorie deficit'), dbc.Input(id='input-calorie-deficit', type="number", min=0, max=1000, step=100, value=500)
     ], class_name ='mb-2', size='sm'),
+    html.Div(id='weight-line-chart', className="m-4")
 ])
 
 # macros and weight loss tables
@@ -194,6 +195,7 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Output('macros-pie-chart', 'children'),
     Output('pie-chart-title', 'children'),
     Output('input-daily-steps', 'value'),
+    Output('weight-line-chart', 'children'),    
     Input('bmr-calculate', 'n_clicks'),
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
@@ -221,6 +223,31 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
         bmr_result = bmr_engine(
             method=bmr_formula_input, age=input_age, gender=input_gender, height=input_height, weight=input_weight, bf=input_bf)
         calories_result = bmr_result * activity_levels.get(_activity_levels[int(activity_level_value)]) - deficit
+        # weight line chart dataframe
+        df_weight = pd.DataFrame({
+            'week' : [1, 2, 3],
+            'weight' : [90, 89, 88]
+        })
+        # weight line chart
+        fig_weight = (
+        px.line(
+            df_weight,
+            x='week',
+            y=['weight'],
+            labels={
+                'value' : 'Weight'
+            },
+            color_discrete_map={
+                'Actual' : '#1f77b4',
+                'Prediction' : '#d62728'
+            }
+            )
+            .update_layout({
+            'plot_bgcolor' : 'rgba(0, 0, 0, 0)',
+            'paper_bgcolor' : 'rgba(0, 0, 0, 0)'},
+            legend_title='', hovermode='x unified')
+            .update_traces(mode='lines', hovertemplate='%{y:$.2f}<extra></extra>')
+        )
         # macros graph dataframe
         _protein = (input_weight * protein_kg_value * 4) / calories_result
         _fat = (input_weight * fat_kg_value * 4) / calories_result
@@ -230,23 +257,24 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             'macro_pct' : [_protein, _carbs, _fat]
         })
         # macros pie chart
-        fig = go.Figure(data=[go.Pie(
+        macros_fig = go.Figure(data=[go.Pie(
             labels=df_macros['macro'], 
             values=df_macros['macro_pct'],
             textinfo='label+percent',
             hoverinfo='skip',
             showlegend=False,
             hole=.4)])
-        fig.update_traces(textfont_size=15, marker={'colors' : ['deepskyblue', 'lightpink', 'forestgreen']})
+        macros_fig.update_traces(textfont_size=15, marker={'colors' : ['deepskyblue', 'lightpink', 'forestgreen']})
         return \
             bmr_results_table(headers, bmr_result, deficit=deficit),\
             weight_loss_table(wl_headers, bmr_result, activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
             macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
             html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
-            html.Div(dcc.Graph(figure=fig), style={'border' : '1px grey dotted'}),\
+            html.Div(dcc.Graph(figure=macros_fig), style={'border' : '1px grey dotted'}),\
             'Energy breakdown',\
-            '{0:,.0f}'.format(calories_to_steps(calories_result-bmr_result, input_weight))
+            '{0:,.0f}'.format(calories_to_steps(calories_result-bmr_result, input_weight)),\
+            html.Div(dcc.Graph(figure=fig_weight, style={'border' : '1px grey dotted'}))
     return \
         blank_table(headers, rows=1),\
         blank_table(wl_headers, rows=1),\
@@ -254,7 +282,8 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
         html.Br(),\
         html.Br(),\
         '',\
-        ''
+        '',\
+        html.Br()
 
 # disable input buttons if no proper input is available
 @app.callback(

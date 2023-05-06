@@ -1,6 +1,6 @@
 import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html, Input, Output, State, callback_context
-import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 
@@ -8,6 +8,7 @@ from helpers import blank_table, bmr_results_table, weight_loss_table, macros_ta
 
 # app set-up
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+
 app.title = 'BMR Calculator'
 server = app.server
 
@@ -67,7 +68,7 @@ energy_needs = html.Div([
 # macros and weight loss tables
 macros = html.Div([
     html.Br(),
-    html.H4('Macros', style={'color' : 'green', 'text-align' : 'center'}),    
+    html.H4('Macros', style={'color' : 'green', 'text-align' : 'center'}),
     html.Div(id='table-macros'),
     html.Div(id='bmr-result-calories'),
     dbc.InputGroup([
@@ -80,7 +81,10 @@ macros = html.Div([
     ], class_name='mb-2', size='sm'),
     dbc.InputGroup([
         dbc.InputGroupText('Fat per kg'),  dbc.Input(id='input-fat-kg', type="number", min=0.5, max=1, step=0.1, value=1)
-    ], class_name='mb-2', size='sm')    
+    ], class_name='mb-2', size='sm'),
+    html.Br(),
+    html.H4(id='pie-chart-title', style={'color' : 'green', 'text-align' : 'center'}),
+    html.Div(id='macros-pie-chart', className="m-4")
 ])
 
 # application layout
@@ -184,6 +188,8 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Output('table-weight-loss', 'children'),    
     Output('table-macros', 'children'),
     Output('bmr-result-calories', 'children'),
+    Output('macros-pie-chart', 'children'),
+    Output('pie-chart-title', 'children'),
     Input('bmr-calculate', 'n_clicks'),
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
@@ -202,7 +208,7 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
     headers = ['Activity level', 'Maintenance', 'Weight loss']
     macro_headers = ['Protein', 'Carbs', 'Fats']
     wl_headers = ['Energy deficit', 'Estimated weekly weight loss']
-    trigger = callback_context.triggered[0]['prop_id'].split('.')[0]        
+    trigger = callback_context.triggered[0]['prop_id'].split('.')[0]   
     if trigger in ['bmr-calculate', 'input-calorie-deficit', 'input-activity-level', 'input-protein-kg', 'input-fat-kg']:
         _activity_levels = list(activity_levels.keys())
         deficit = deficit_value
@@ -211,17 +217,38 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
         bmr_result = bmr_engine(
             method=bmr_formula_input, age=input_age, gender=input_gender, height=input_height, weight=input_weight, bf=input_bf)
         calories_result = bmr_result * activity_levels.get(_activity_levels[int(activity_level_value)]) - deficit
+        # macros graph dataframe
+        _protein = (input_weight * protein_kg_value * 4) / calories_result
+        _fat = (input_weight * fat_kg_value * 4) / calories_result
+        _carbs = 1 - (_protein + _fat)
+        df_macros = pd.DataFrame({
+            'macro' : macro_headers,
+            'macro_pct' : [_protein, _carbs, _fat]
+        })
+        # macros pie chart
+        fig = go.Figure(data=[go.Pie(
+            labels=df_macros['macro'], 
+            values=df_macros['macro_pct'],
+            textinfo='label+percent',
+            hoverinfo='skip',
+            showlegend=False,
+            hole=.4)])
+        fig.update_traces(textfont_size=15, marker={'colors' : ['deepskyblue', 'lightpink', 'forestgreen']})
         return \
             bmr_results_table(headers, bmr_result, deficit=deficit),\
             weight_loss_table(wl_headers, bmr_result, activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
             macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
-            html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'})
+            html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
+            html.Div(dcc.Graph(figure=fig), style={'border' : '1px grey dotted'}),\
+            'Energy breakdown'
     return \
         blank_table(headers, rows=1),\
         blank_table(wl_headers, rows=1),\
         blank_table(macro_headers, rows=1),\
-        html.Br()
+        html.Br(),\
+        html.Br(),\
+        ''
 
 # disable input buttons if no proper input is available
 @app.callback(
@@ -237,5 +264,5 @@ def disable_buttons(bmr_calculated_disabled):
     return [False for _ in range(4)]
 
 # uncomment below for development and debugging
-# if __name__ == '__main__':
-#     app.run_server(port='8051', host='0.0.0.0', debug=True)
+if __name__ == '__main__':
+    app.run_server(port='8051', host='0.0.0.0', debug=True)

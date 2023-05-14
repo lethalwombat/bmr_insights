@@ -4,7 +4,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 
-from helpers import blank_table, bmr_results_table, weight_loss_table, macros_table, bmr_engine, activity_levels, calories_to_steps
+from helpers import \
+    blank_table, bmr_results_table, weight_loss_table, macros_table, bmr_engine, activity_levels, calories_to_steps, weekly_weight_loss
 
 # app set-up
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
@@ -63,6 +64,12 @@ energy_needs = html.Div([
     dbc.InputGroup([
         dbc.InputGroupText('Calorie deficit'), dbc.Input(id='input-calorie-deficit', type="number", min=0, max=1000, step=100, value=500)
     ], class_name ='mb-2', size='sm'),
+    dbc.InputGroup([
+        dbc.InputGroupText('Plan duration in weeks'), dbc.Input(id='input-plan-duration', type="number", min=4, max=12, step=1, value=8)
+    ], class_name ='mb-2', size='sm'),
+    dbc.InputGroup([
+        dbc.InputGroupText('Estimated weight loss'), dbc.Input(id='input-estimated-weight-loss', disabled=True)
+    ], class_name ='mb-2', size='sm'),  
     html.Div(id='weight-line-chart', className="m-4")
 ])
 
@@ -200,7 +207,8 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
     Input('input-protein-kg', 'value'),
-    Input('input-fat-kg', 'value'),  
+    Input('input-fat-kg', 'value'),
+    Input('input-plan-duration', 'value'),
     State('bmr-formula-input', 'value'),
     State('input-age', 'value'),
     State('input-gender', 'value'),
@@ -209,44 +217,49 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     State('input-bf', 'value'),
 )
 def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_value, fat_kg_value,\
+                  plan_duration_value,\
                   bmr_formula_input, input_age, input_gender, input_height, input_weight, input_bf):
     
-    headers = ['Activity level', 'Maintenance', 'Weight loss']
+    headers = ['Activity level', 'Maintenance', 'Deficit']
     macro_headers = ['Protein', 'Carbs', 'Fats']
     wl_headers = ['Energy deficit', 'Estimated weekly weight loss']
     trigger = callback_context.triggered[0]['prop_id'].split('.')[0]   
-    if trigger in ['bmr-calculate', 'input-calorie-deficit', 'input-activity-level', 'input-protein-kg', 'input-fat-kg']:
+    if trigger in ['bmr-calculate', 'input-calorie-deficit', 'input-activity-level', 'input-protein-kg', 'input-fat-kg', 'input-plan-duration']:
         _activity_levels = list(activity_levels.keys())
         deficit = deficit_value
+        plan_duration = plan_duration_value
         if deficit_value is None:
             deficit = 0
+        if plan_duration_value is None:
+            plan_duration = 8
         bmr_result = bmr_engine(
             method=bmr_formula_input, age=input_age, gender=input_gender, height=input_height, weight=input_weight, bf=input_bf)
         calories_result = bmr_result * activity_levels.get(_activity_levels[int(activity_level_value)]) - deficit
         # weight line chart dataframe
         df_weight = pd.DataFrame({
-            'week' : [1, 2, 3],
-            'weight' : [90, 89, 88]
+            'Week' : [_ for _ in range(plan_duration+1)],
+            'Weight' : [input_weight - (_ * weekly_weight_loss(deficit)) for _ in range(plan_duration+1)]
         })
         # weight line chart
         fig_weight = (
         px.line(
             df_weight,
-            x='week',
-            y=['weight'],
+            x='Week',
+            y='Weight',
             labels={
                 'value' : 'Weight'
             },
             color_discrete_map={
-                'Actual' : '#1f77b4',
-                'Prediction' : '#d62728'
+                'Weight' : '#1f77b4',
             }
             )
             .update_layout({
             'plot_bgcolor' : 'rgba(0, 0, 0, 0)',
             'paper_bgcolor' : 'rgba(0, 0, 0, 0)'},
-            legend_title='', hovermode='x unified')
-            .update_traces(mode='lines', hovertemplate='%{y:$.2f}<extra></extra>')
+            legend_title='', hovermode='x')
+            .update_traces(mode='lines', hovertemplate='Week %{x:.0f}<br>%{y:.1f} kg')
+            .update_yaxes(range=[input_weight-15, input_weight], fixedrange=True, tick0=input_weight, dtick=5)
+            .update_xaxes(range=[0, plan_duration], visible=False, fixedrange=True)
         )
         # macros graph dataframe
         _protein = (input_weight * protein_kg_value * 4) / calories_result
@@ -273,8 +286,8 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
             html.Div(dcc.Graph(figure=macros_fig), style={'border' : '1px grey dotted'}),\
             'Energy breakdown',\
-            '{0:,.0f}'.format(calories_to_steps(calories_result-bmr_result, input_weight)),\
-            html.Div(dcc.Graph(figure=fig_weight, style={'border' : '1px grey dotted'}))
+            '{0:,.0f}'.format(max(calories_to_steps(calories_result-(bmr_result*1.2), input_weight),0)),\
+            html.Div(dcc.Graph(figure=fig_weight, config={'displayModeBar': False}, style={'border' : '1px grey dotted'}))
     return \
         blank_table(headers, rows=1),\
         blank_table(wl_headers, rows=1),\
@@ -288,6 +301,7 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
 # disable input buttons if no proper input is available
 @app.callback(
     Output('input-calorie-deficit', 'disabled'),
+    Output('input-plan-duration', 'disabled'),
     Output('input-activity-level', 'disabled'),
     Output('input-protein-kg', 'disabled'),
     Output('input-fat-kg', 'disabled'),    
@@ -295,8 +309,8 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
 )
 def disable_buttons(bmr_calculated_disabled):
     if bmr_calculated_disabled:
-        return [True for _ in range(4)]
-    return [False for _ in range(4)]
+        return [True for _ in range(5)]
+    return [False for _ in range(5)]
 
 # uncomment below for development and debugging
 if __name__ == '__main__':

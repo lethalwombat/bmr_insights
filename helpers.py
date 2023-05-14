@@ -63,9 +63,12 @@ def macros_table(headers: list, bmr_result: int, deficit=500, weight=90, activit
         ])]
     return dbc.Table(table_header + table_body, bordered=bordered)
 
+def weekly_weight_loss(deficit: int):
+    return (deficit * 7) / 7700
+
 def weight_loss_table(headers: list, bmr_result: int, deficit=500, activity_level='Moderately active (1.55)', bordered=True):
     # calculate metrics
-    weekly_weight_loss = (deficit * 7) / 7700
+    _weekly_weight_loss = weekly_weight_loss(deficit)
     energy_deficit = deficit / (bmr_result * activity_levels.get(activity_level))
 
     # generate headers
@@ -74,7 +77,7 @@ def weight_loss_table(headers: list, bmr_result: int, deficit=500, activity_leve
 
     # generate table body
     table_body = [html.Tbody([
-            table_row('{:.1%}'.format(energy_deficit), '{0:,.3f} kg'.format(weekly_weight_loss)) for _ in range(1)])
+            table_row('{:.1%}'.format(energy_deficit), '{0:,.3f} kg'.format(_weekly_weight_loss)) for _ in range(1)])
         ]
     return dbc.Table(table_header + table_body, bordered=bordered)
 

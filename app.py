@@ -68,8 +68,10 @@ energy_needs = html.Div([
         dbc.InputGroupText('Plan duration in weeks'), dbc.Input(id='input-plan-duration', type="number", min=4, max=12, step=1, value=8)
     ], class_name ='mb-2', size='sm'),
     dbc.InputGroup([
-        dbc.InputGroupText('Estimated weight loss'), dbc.Input(id='input-estimated-weight-loss', disabled=True)
-    ], class_name ='mb-2', size='sm'),  
+        dbc.InputGroupText('Projected total weight loss'), dbc.Input(id='input-estimated-weight-loss', disabled=True)
+    ], class_name ='mb-2', size='sm'),
+    html.Br(),
+    html.H4(id='weight-line-chart-title', style={'color' : 'green', 'text-align' : 'center'}),    
     html.Div(id='weight-line-chart', className="m-4")
 ])
 
@@ -202,7 +204,9 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Output('macros-pie-chart', 'children'),
     Output('pie-chart-title', 'children'),
     Output('input-daily-steps', 'value'),
-    Output('weight-line-chart', 'children'),    
+    Output('weight-line-chart', 'children'),
+    Output('weight-line-chart-title', 'children'),
+    Output('input-estimated-weight-loss', 'value'), 
     Input('bmr-calculate', 'n_clicks'),
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
@@ -222,23 +226,29 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
     
     headers = ['Activity level', 'Maintenance', 'Deficit']
     macro_headers = ['Protein', 'Carbs', 'Fats']
-    wl_headers = ['Energy deficit', 'Estimated weekly weight loss']
+    wl_headers = ['Energy deficit', 'Projected weekly weight loss']
     trigger = callback_context.triggered[0]['prop_id'].split('.')[0]   
     if trigger in ['bmr-calculate', 'input-calorie-deficit', 'input-activity-level', 'input-protein-kg', 'input-fat-kg', 'input-plan-duration']:
         _activity_levels = list(activity_levels.keys())
-        deficit = deficit_value
-        plan_duration = plan_duration_value
+        # default deficit value
         if deficit_value is None:
-            deficit = 0
+            deficit_value = 500
+        # default plan duration
         if plan_duration_value is None:
-            plan_duration = 8
+            plan_duration_value = 8
+        # default input protein value
+        if protein_kg_value is None:
+            protein_kg_value = 2
+        # default input fat value
+        if fat_kg_value is None:
+            fat_kg_value = 1
         bmr_result = bmr_engine(
             method=bmr_formula_input, age=input_age, gender=input_gender, height=input_height, weight=input_weight, bf=input_bf)
-        calories_result = bmr_result * activity_levels.get(_activity_levels[int(activity_level_value)]) - deficit
+        calories_result = bmr_result * activity_levels.get(_activity_levels[int(activity_level_value)]) - deficit_value
         # weight line chart dataframe
         df_weight = pd.DataFrame({
-            'Week' : [_ for _ in range(plan_duration+1)],
-            'Weight' : [input_weight - (_ * weekly_weight_loss(deficit)) for _ in range(plan_duration+1)]
+            'Week' : [_ for _ in range(plan_duration_value+1)],
+            'Weight' : [input_weight - (_ * weekly_weight_loss(deficit_value)) for _ in range(plan_duration_value+1)]
         })
         # weight line chart
         fig_weight = (
@@ -249,17 +259,14 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             labels={
                 'value' : 'Weight'
             },
-            color_discrete_map={
-                'Weight' : '#1f77b4',
-            }
             )
             .update_layout({
             'plot_bgcolor' : 'rgba(0, 0, 0, 0)',
             'paper_bgcolor' : 'rgba(0, 0, 0, 0)'},
             legend_title='', hovermode='x')
-            .update_traces(mode='lines', hovertemplate='Week %{x:.0f}<br>%{y:.1f} kg')
+            .update_traces(mode='lines', hovertemplate='Week %{x:.0f}<br>%{y:.1f} kg', line={'color' : 'deepskyblue', 'width' : 1.5})
             .update_yaxes(range=[input_weight-15, input_weight], fixedrange=True, tick0=input_weight, dtick=5)
-            .update_xaxes(range=[0, plan_duration], visible=False, fixedrange=True)
+            .update_xaxes(range=[0, plan_duration_value], visible=False, fixedrange=True)
         )
         # macros graph dataframe
         _protein = (input_weight * protein_kg_value * 4) / calories_result
@@ -279,15 +286,17 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             hole=.4)])
         macros_fig.update_traces(textfont_size=15, marker={'colors' : ['deepskyblue', 'lightpink', 'forestgreen']})
         return \
-            bmr_results_table(headers, bmr_result, deficit=deficit),\
-            weight_loss_table(wl_headers, bmr_result, activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
+            bmr_results_table(headers, bmr_result, deficit=deficit_value),\
+            weight_loss_table(wl_headers, bmr_result, activity_level=_activity_levels[int(activity_level_value)], deficit=deficit_value),\
             macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
-                          activity_level=_activity_levels[int(activity_level_value)], deficit=deficit),\
+                          activity_level=_activity_levels[int(activity_level_value)], deficit=deficit_value),\
             html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
             html.Div(dcc.Graph(figure=macros_fig), style={'border' : '1px grey dotted'}),\
             'Energy breakdown',\
             '{0:,.0f}'.format(max(calories_to_steps(calories_result-(bmr_result*1.2), input_weight),0)),\
-            html.Div(dcc.Graph(figure=fig_weight, config={'displayModeBar': False}, style={'border' : '1px grey dotted'}))
+            html.Div(dcc.Graph(figure=fig_weight, config={'displayModeBar': False}, style={'border' : '1px grey dotted'})),\
+            'Projected weekly bodyweight',\
+            '{0:,.1f} kg'.format(weekly_weight_loss(deficit_value) * plan_duration_value)
     return \
         blank_table(headers, rows=1),\
         blank_table(wl_headers, rows=1),\
@@ -296,7 +305,9 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
         html.Br(),\
         '',\
         '',\
-        html.Br()
+        html.Br(),\
+        '',\
+        ''
 
 # disable input buttons if no proper input is available
 @app.callback(

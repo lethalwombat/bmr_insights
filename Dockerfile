@@ -2,7 +2,9 @@
 FROM python:3.8-slim-buster
 USER root
 
-# working directory
+# create and set working directory
+RUN \
+    mkdir -p /app/assets
 WORKDIR /app
 
 # update runtime packages
@@ -22,6 +24,7 @@ RUN \
 # copy applications assets into the container
 COPY app.py app.py
 COPY helpers.py helpers.py
+COPY favicon.ico /app/assets/favicon.ico
 
 # expose 8050 to the outside world
 EXPOSE 8051

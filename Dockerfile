@@ -1,6 +1,5 @@
-# python base image
-FROM python:3.11-slim-buster
-USER root
+# # python base image
+FROM python:3.8.12-slim-buster
 
 # create and set working directory
 RUN \

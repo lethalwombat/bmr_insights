@@ -340,5 +340,5 @@ def disable_buttons(bmr_calculated_disabled):
     return [False for _ in range(5)]
 
 # uncomment below for development and debugging
-if __name__ == '__main__':
-    app.run_server(port='8051', host='0.0.0.0', debug=True)
+# if __name__ == '__main__':
+#     app.run_server(port='8051', host='0.0.0.0', debug=True)

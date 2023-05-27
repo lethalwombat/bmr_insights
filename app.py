@@ -91,6 +91,7 @@ energy_needs = html.Div([
     ], class_name ='mb-2', size='sm'),
     html.Br(),
     html.Div(id='bmr-result-calories'),
+    html.Div(id='bmr-result-joules'),
     html.Br(),
     html.Div(id='table-energy-needs'),
     html.Div(id='table-weight-loss'),
@@ -214,6 +215,7 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Output('table-weight-loss', 'children'),    
     Output('table-macros', 'children'),
     Output('bmr-result-calories', 'children'),
+    Output('bmr-result-joules', 'children'),
     Output('macros-pie-chart', 'children'),
     Output('pie-chart-title', 'children'),
     Output('input-daily-steps', 'value'),
@@ -305,6 +307,7 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit_value),\
             html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
+            html.H4('{0:,.0f} kJ'.format(calories_result*4.184), style={'color' : 'blue', 'text-align' : 'center'}),\
             html.Div(dcc.Graph(figure=macros_fig), style={'border' : '1px grey dotted'}),\
             '',\
             '{0:,.0f}'.format(max(calories_to_steps(calories_result-(bmr_result*1.2), input_weight),0)),\

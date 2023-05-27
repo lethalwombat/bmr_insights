@@ -25,9 +25,9 @@ COPY app.py app.py
 COPY helpers.py helpers.py
 COPY favicon.ico /app/assets/favicon.ico
 
-# expose 8050 to the outside world
-EXPOSE 8051
-
 # entrypoint to the application
 # CMD ["python", "app.py"]
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8051", "app:server"]
+ENTRYPOINT ["gunicorn", "-w", "4", "-b", "0.0.0.0:8051", "app:server"]
+
+# expose 8050 to the outside world
+EXPOSE 8051

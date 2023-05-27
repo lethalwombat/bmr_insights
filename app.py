@@ -91,6 +91,7 @@ energy_needs = html.Div([
     ], class_name ='mb-2', size='sm'),
     html.Br(),
     html.Div(id='bmr-result-calories'),
+    html.Br(),
     html.Div(id='bmr-result-joules'),
     html.Br(),
     html.Div(id='table-energy-needs'),
@@ -316,6 +317,7 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             '{0:,.1f} kg'.format(weekly_weight_loss(deficit_value) * plan_duration_value),\
             '{0:,.1f} kg'.format(input_weight - weekly_weight_loss(deficit_value) * plan_duration_value)
     return \
+        html.Br(),\
         html.Br(),\
         html.Br(),\
         html.Br(),\

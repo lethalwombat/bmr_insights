@@ -1,4 +1,3 @@
-###Application deployment steps using Microsoft Azure infrastructure
+### Application deployment steps using Microsoft Azure infrastructure
 
-####
-1. Provision resources
+#### 1. Provision infrastrucure 

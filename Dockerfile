@@ -21,9 +21,9 @@ RUN \
     rm requirements.txt
 
 # copy applications assets into the container
-COPY app.py app.py
-COPY helpers.py helpers.py
-COPY favicon.ico /app/assets/favicon.ico
+COPY app/app.py app.py
+COPY app/helpers.py helpers.py
+COPY app/favicon.ico /app/assets/favicon.ico
 
 # entrypoint to the application
 # CMD ["python", "app.py"]

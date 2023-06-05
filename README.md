@@ -4,7 +4,7 @@
 ### Application deployment steps using Microsoft Azure infrastructure
 
 #### 1. Clone the repo into your local machine
-#### 2. Clone the Provision Azure infrastrucure 
+#### 2. Provision Azure infrastrucure 
 ```
 cd azure_infra && ./build.sh
 ```

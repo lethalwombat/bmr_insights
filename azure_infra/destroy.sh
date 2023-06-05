@@ -1,2 +1,2 @@
 #! /bin/bash
-az group delete -n rg-bmr-calculator-dev --no-wait -y
+az group delete -n rg-bmr-calculator --no-wait -y

@@ -1,11 +1,18 @@
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html, Input, Output, State, callback_context
-import plotly.graph_objects as go
-import plotly.express as px
-import pandas as pd
-
-from helpers import \
-    blank_table, bmr_results_table, weight_loss_table, macros_table, bmr_engine, activity_levels, calories_to_steps, weekly_weight_loss
+from helpers import (
+    # blank_table,
+    bmr_results_table,
+    weight_loss_table,
+    macros_table,
+    bmr_engine,
+    activity_levels,
+    calories_to_steps,
+    weekly_weight_loss
+)
 
 # app set-up
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
@@ -17,7 +24,7 @@ server = app.server
 # bmr calculator inputs
 bmr_inputs = html.Div([
     html.Br(),
-    html.H4('Inputs', style={'color' : 'green', 'text-align' : 'center'}),
+    html.H4('Body', style={'color' : 'green', 'text-align' : 'center'}),
     dbc.InputGroup([
         dbc.InputGroupText('BMR formula'),
         dbc.Select(id='bmr-formula-input',
@@ -52,51 +59,59 @@ bmr_inputs = html.Div([
     dbc.InputGroup([
         dbc.InputGroupText('Fat mass'), dbc.Input(id='input-fat-mass', disabled=True, type="text")
     ], class_name ='mb-2', size='sm'),
-    dbc.Button('Update results', id='bmr-calculate', n_clicks=0, size='sm', disabled=True)
+    dbc.Button('Update results', id='bmr-calculate', n_clicks=0, size='sm', disabled=True),
+    html.Br(),
+    html.H4(id='weight-line-chart-title', style={'color' : 'green', 'text-align' : 'center'}),        
+    html.Div(id='weight-line-chart', className="m-4")
 ])
 
 # energy needs table
 energy_needs = html.Div([
     html.Br(),
-    html.H4('Energy needs', style={'color' : 'green', 'text-align' : 'center'}),
-    html.Div(id='table-energy-needs'),
-    html.Div(id='table-weight-loss'),
+    html.H4('Energy', style={'color' : 'green', 'text-align' : 'center'}),
     dbc.InputGroup([
-        dbc.InputGroupText('Calorie deficit'), dbc.Input(id='input-calorie-deficit', type="number", min=0, max=1000, step=100, value=500)
+        dbc.InputGroupText('Calorie deficit'), dbc.Input(id='input-calorie-deficit', type="number", min=0, max=1000, step=100, value=0)
     ], class_name ='mb-2', size='sm'),
     dbc.InputGroup([
         dbc.InputGroupText('Plan duration in weeks'), dbc.Input(id='input-plan-duration', type="number", min=4, max=12, step=1, value=8)
     ], class_name ='mb-2', size='sm'),
     dbc.InputGroup([
+        dbc.InputGroupText('Activity level'), dbc.Select(id='input-activity-level', options=[
+            {'label' : level, "value" : count} for count, level in enumerate(activity_levels)
+        ], value=3)
+    ], class_name ='mb-2', size='sm'),    
+    dbc.InputGroup([
         dbc.InputGroupText('Projected total weight loss'), dbc.Input(id='input-estimated-weight-loss', disabled=True)
     ], class_name ='mb-2', size='sm'),
+    dbc.InputGroup([
+        dbc.InputGroupText('Projected new weight'), dbc.Input(id='input-estimated-new-weight', disabled=True)
+    ], class_name ='mb-2', size='sm'),
+    dbc.InputGroup([
+        dbc.InputGroupText('Daily steps'), dbc.Input(id='input-daily-steps', type='text', disabled=True)
+    ], class_name ='mb-2', size='sm'),
     html.Br(),
-    html.H4(id='weight-line-chart-title', style={'color' : 'green', 'text-align' : 'center'}),    
-    html.Div(id='weight-line-chart', className="m-4")
+    html.Div(id='bmr-result-calories'),
+    html.Br(),
+    html.Div(id='bmr-result-joules'),
+    html.Br(),
+    html.Div(id='table-energy-needs'),
+    html.Div(id='table-weight-loss'),
 ])
 
 # macros and weight loss tables
 macros = html.Div([
     html.Br(),
-    html.H4('Macros', style={'color' : 'green', 'text-align' : 'center'}),
-    html.Div(id='table-macros'),
-    html.Div(id='bmr-result-calories'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Activity level'), dbc.Select(id='input-activity-level', options=[
-            {'label' : level, "value" : count} for count, level in enumerate(activity_levels)
-        ], value=3)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Daily steps'), dbc.Input(id='input-daily-steps', type='text', disabled=True)
-    ], class_name ='mb-2', size='sm'),
+    html.H4('Macronutrients', style={'color' : 'green', 'text-align' : 'center'}),
     dbc.InputGroup([
         dbc.InputGroupText('Protein per kg'),  dbc.Input(id='input-protein-kg', type="number", min=1, max=3, step=0.1, value=2)
     ], class_name='mb-2', size='sm'),
     dbc.InputGroup([
         dbc.InputGroupText('Fat per kg'),  dbc.Input(id='input-fat-kg', type="number", min=0.5, max=1, step=0.1, value=1)
     ], class_name='mb-2', size='sm'),
-    html.Br(),
+    # html.Br(),
     html.H4(id='pie-chart-title', style={'color' : 'green', 'text-align' : 'center'}),
+    html.Br(),
+    html.Div(id='table-macros'),
     html.Div(id='macros-pie-chart', className="m-4")
 ])
 
@@ -201,12 +216,14 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Output('table-weight-loss', 'children'),    
     Output('table-macros', 'children'),
     Output('bmr-result-calories', 'children'),
+    Output('bmr-result-joules', 'children'),
     Output('macros-pie-chart', 'children'),
     Output('pie-chart-title', 'children'),
     Output('input-daily-steps', 'value'),
     Output('weight-line-chart', 'children'),
     Output('weight-line-chart-title', 'children'),
-    Output('input-estimated-weight-loss', 'value'), 
+    Output('input-estimated-weight-loss', 'value'),
+    Output('input-estimated-new-weight', 'value'),
     Input('bmr-calculate', 'n_clicks'),
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
@@ -232,7 +249,7 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
         _activity_levels = list(activity_levels.keys())
         # default deficit value
         if deficit_value is None:
-            deficit_value = 500
+            deficit_value = 0
         # default plan duration
         if plan_duration_value is None:
             plan_duration_value = 8
@@ -291,21 +308,25 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit_value),\
             html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
+            html.H4('{0:,.0f} kJ'.format(calories_result*4.184), style={'color' : 'blue', 'text-align' : 'center'}),\
             html.Div(dcc.Graph(figure=macros_fig), style={'border' : '1px grey dotted'}),\
-            'Energy breakdown',\
+            '',\
             '{0:,.0f}'.format(max(calories_to_steps(calories_result-(bmr_result*1.2), input_weight),0)),\
             html.Div(dcc.Graph(figure=fig_weight, config={'displayModeBar': False}, style={'border' : '1px grey dotted'})),\
             'Projected weekly bodyweight',\
-            '{0:,.1f} kg'.format(weekly_weight_loss(deficit_value) * plan_duration_value)
+            '{0:,.1f} kg'.format(weekly_weight_loss(deficit_value) * plan_duration_value),\
+            '{0:,.1f} kg'.format(input_weight - weekly_weight_loss(deficit_value) * plan_duration_value)
     return \
-        blank_table(headers, rows=1),\
-        blank_table(wl_headers, rows=1),\
-        blank_table(macro_headers, rows=1),\
+        html.Br(),\
+        html.Br(),\
+        html.Br(),\
+        html.Br(),\
         html.Br(),\
         html.Br(),\
         '',\
         '',\
         html.Br(),\
+        '',\
         '',\
         ''
 

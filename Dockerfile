@@ -1,6 +1,5 @@
-# python base image
-FROM python:3.8-slim-buster
-USER root
+# # python base image
+FROM python:3.8.12-slim-buster
 
 # create and set working directory
 RUN \
@@ -30,5 +29,5 @@ COPY favicon.ico /app/assets/favicon.ico
 # CMD ["python", "app.py"]
 ENTRYPOINT ["gunicorn", "-w", "4", "-b", "0.0.0.0:8051", "app:server"]
 
-# expose 8050 to the outside world
+# expose 8051 to the outside world
 EXPOSE 8051

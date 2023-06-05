@@ -11,4 +11,4 @@ scp -i ~/.ssh/id_rsa docker_install.sh azureuser@$1:/home/azureuser &&\
 scp -i ~/.ssh/id_rsa repo_clone.sh azureuser@$1:/home/azureuser &&\
 
 # ssh into the vm
-ssh -i ~/.ssh/id_rsa azureuser@$1 &&\
+ssh -i ~/.ssh/id_rsa azureuser@$1

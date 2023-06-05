@@ -1,6 +1,6 @@
 #! /bin/bash
 # resource group name and location
-rg=rg-bmr-calculator-dev
+rg=rg-bmr-calculator
 location=australiaeast
 
 # create the destroy script

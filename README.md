@@ -1,3 +1,6 @@
+### BMR Calculator
+##### Calculate your energy requirements based on your height, weight, age and daily physical activity level
+![image](https://github.com/lethalwombat/bmr_insights/assets/84167672/023ff533-ad99-4cce-8d05-f40c6cf6a2ae)
 ### Application deployment steps using Microsoft Azure infrastructure
 
 #### 1. Clone the repo into your local machine

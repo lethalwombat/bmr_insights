@@ -16,7 +16,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' = {
   location: location
   properties: {
     hardwareProfile: {
-      vmSize: 'Standard_B2ms'
+      vmSize: 'Standard_B1ms'
     }
     storageProfile: {
       osDisk: {

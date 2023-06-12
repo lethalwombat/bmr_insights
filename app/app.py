@@ -48,7 +48,7 @@ bmr_inputs = html.Div([
         dbc.InputGroupText('Height'), dbc.Input(id='input-height', disabled=True, type="number", min=150, max=230, step=1)
     ], class_name ='mb-2', size='sm'),
     dbc.InputGroup([
-        dbc.InputGroupText('Weight'), dbc.Input(id='input-weight', disabled=True, type="number", min=40, max=150, step=1)
+        dbc.InputGroupText('Weight'), dbc.Input(id='input-weight', disabled=True, type="number", min=40, max=150, step=0.1)
     ], class_name ='mb-2', size='sm'),
     dbc.InputGroup([
         dbc.InputGroupText('Estimated bodyfat %'), dbc.Input(id='input-bf', disabled=True, type="number", min=5, max=40, step=1)
@@ -267,24 +267,22 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             'Week' : [_ for _ in range(plan_duration_value+1)],
             'Weight' : [input_weight - (_ * weekly_weight_loss(deficit_value)) for _ in range(plan_duration_value+1)]
         })
-        # weight line chart
         fig_weight = (
-        px.line(
+        px.bar(
             df_weight,
             x='Week',
             y='Weight',
-            labels={
-                'value' : 'Weight'
-            },
+            text='Weight'
             )
             .update_layout({
             'plot_bgcolor' : 'rgba(0, 0, 0, 0)',
             'paper_bgcolor' : 'rgba(0, 0, 0, 0)'},
-            legend_title='', hovermode='x')
-            .update_traces(mode='lines', hovertemplate='Week %{x:.0f}<br>%{y:.1f} kg', line={'color' : 'deepskyblue', 'width' : 1.5})
-            .update_yaxes(range=[input_weight-15, input_weight], fixedrange=True, tick0=input_weight, dtick=5)
-            .update_xaxes(range=[0, plan_duration_value], visible=False, fixedrange=True)
+            legend_title='', hovermode=False)
+            .update_traces(marker_color='deepskyblue', marker_line_color='silver', marker_line_width=1, textposition='outside', texttemplate='%{y:.1f}', textfont_size=14, textangle=330)
+            .update_yaxes(range=[input_weight-15, input_weight+5], fixedrange=True, tick0=input_weight, dtick=5, visible=False)
+            .update_xaxes(fixedrange=True)
         )
+
         # macros graph dataframe
         _protein = (input_weight * protein_kg_value * 4) / calories_result
         _fat = (input_weight * fat_kg_value * 4) / calories_result

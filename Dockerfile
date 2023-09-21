@@ -27,7 +27,7 @@ COPY app/favicon.ico /app/assets/favicon.ico
 
 # entrypoint to the application
 # CMD ["python", "app.py"]
-ENTRYPOINT ["gunicorn", "-w", "4", "-b", "0.0.0.0:8051", "app:server"]
+ENTRYPOINT ["gunicorn", "-w", "4", "-b", "0.0.0.0:80", "app:server"]
 
 # expose 80 to the outside world
 EXPOSE 80

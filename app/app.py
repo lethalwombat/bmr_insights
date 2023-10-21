@@ -22,111 +22,186 @@ server = app.server
 
 # application components
 # bmr calculator inputs
+inputs_body = dbc.Card(
+    [
+        dbc.CardHeader('Body', style={'color' : 'green'}),
+        dbc.CardBody(
+            [
+                dbc.InputGroup([
+                    dbc.InputGroupText('BMR formula'),
+                    dbc.Select(id='bmr-formula-input',
+                        options=[
+                            {'label' : 'Mifflin St Jeor', "value" : 1},
+                            {'label' : 'Katch–McArdle', "value" : 2},
+                        ], placeholder='Select BMR formula'),
+                ], class_name='mb-2', size='sm'),
+                dbc.InputGroup([
+	                dbc.InputGroupText('Age'), dbc.Input(id='input-age', disabled=True, type="number", min=15, max=80, step=1)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Gender'),
+                    dbc.Select(id='input-gender',
+                        options=[
+                            {'label' : 'Male', "value" : 1},
+                            {'label' : 'Female', "value" : 2},
+                        ], placeholder='Select gender'),
+                ], class_name='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Height'), dbc.Input(id='input-height', disabled=True, type="number", min=150, max=230, step=1)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Weight'), dbc.Input(id='input-weight', disabled=True, type="number", min=40, max=150, step=0.1)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Estimated bodyfat %'), dbc.Input(id='input-bf', disabled=True, type="number", min=5, max=40, step=1)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Lean mass'), dbc.Input(id='input-lean-mass', disabled=True, type="text")
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Fat mass'), dbc.Input(id='input-fat-mass', disabled=True, type="text")
+                ], class_name ='mb-2', size='sm'),
+                html.Div([
+                    dbc.Button('Calculate BMR', id='bmr-calculate', n_clicks=0, disabled=True, size='sm', color='primary'),
+                ], className='d-grid gap-2 col-10 mx-auto')
+                ]),
+            ],
+class_name='card border-secondary mb-3 mt-3')
+
+# energy inputs
+inputs_energy = dbc.Card(
+    [
+        dbc.CardHeader('Energy', style={'color' : 'green'}),
+        dbc.CardBody(
+            [
+                dbc.InputGroup([
+                    dbc.InputGroupText('Calorie deficit'), dbc.Input(id='input-calorie-deficit', type="number", min=0, max=1000, step=100, value=0)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Plan duration in weeks'), dbc.Input(id='input-plan-duration', type="number", min=4, max=12, step=1, value=8)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Activity level'), dbc.Select(id='input-activity-level', options=[
+                        {'label' : level, "value" : count} for count, level in enumerate(activity_levels)
+                    ], value=3)
+                ], class_name ='mb-2', size='sm'),    
+                dbc.InputGroup([
+                    dbc.InputGroupText('Projected total weight loss'), dbc.Input(id='input-estimated-weight-loss', disabled=True)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Projected new weight'), dbc.Input(id='input-estimated-new-weight', disabled=True)
+                ], class_name ='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Daily steps'), dbc.Input(id='input-daily-steps', type='text', disabled=True)
+                ], class_name ='mb-2', size='sm'),
+                ]),
+            ],
+class_name='card border-secondary mb-3', id='inputs-energy', style={'display' : 'none'})
+
+# macros inputs
+inputs_macros = dbc.Card(
+    [
+        dbc.CardHeader('Macronutrients', style={'color' : 'green'}),
+        dbc.CardBody(
+            [
+                dbc.InputGroup([
+                    dbc.InputGroupText('Protein per kg'),  dbc.Input(id='input-protein-kg', type="number", min=1, max=3, step=0.1, value=2)
+                ], class_name='mb-2', size='sm'),
+                dbc.InputGroup([
+                    dbc.InputGroupText('Fat per kg'),  dbc.Input(id='input-fat-kg', type="number", min=0.5, max=1, step=0.1, value=1)
+                ], class_name='mb-2', size='sm'),
+                html.Div(id='table-macros'),
+                html.Div(id='macros-pie-chart')
+                ]),
+            ],
+class_name='card border-secondary mb-3', id='inputs-macros', style={'display' : 'none'})
+
+# results
+results_calories = dbc.Card(
+    [
+        dbc.CardBody(
+            [
+                html.H4('here', style={'text-align' :'center'}, id='bmr-result-calories'),
+                html.H4('here', style={'text-align' :'center'}, id='bmr-result-joules'),                
+                ]),
+            ],
+class_name='card text-white bg-dark mb-3', style={'display' : 'none'}, id='results-calories')
+
+results_weight_line_chart = dbc.Card(
+    [
+        dbc.CardHeader('Projected weekly bodyweight', style={'color' : 'green'}),
+        dbc.CardBody(
+            [
+                html.Div(id='weight-line-chart')                
+            ]
+        )
+    ],
+class_name = 'card border-secondary mb-3', style={'display' : 'none'}, id='results-weight-line-chart')
+
+results_tables = dbc.Card(
+    [
+        dbc.CardHeader('Energy needs', style={'color' : 'green'}),
+        dbc.CardBody(
+            [
+                html.Div(id='table-energy-needs'),
+                html.Div(id='table-weight-loss'),
+            ]
+        )
+    ],
+class_name='card border-secondary mb-3', id='results-tables', style={'display' : 'none'})
+
+
 bmr_inputs = html.Div([
     html.Br(),
-    html.H4('Body', style={'color' : 'green', 'text-align' : 'center'}),
-    dbc.InputGroup([
-        dbc.InputGroupText('BMR formula'),
-        dbc.Select(id='bmr-formula-input',
-            options=[
-                {'label' : 'Mifflin St Jeor', "value" : 1},
-                {'label' : 'Katch–McArdle', "value" : 2},
-            ], placeholder='Select BMR formula'),
-    ], class_name='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Age'), dbc.Input(id='input-age', disabled=True, type="number", min=15, max=80, step=1)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Gender'),
-        dbc.Select(id='input-gender',
-            options=[
-                {'label' : 'Male', "value" : 1},
-                {'label' : 'Female', "value" : 2},
-            ], placeholder='Select gender'),
-    ], class_name='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Height'), dbc.Input(id='input-height', disabled=True, type="number", min=150, max=230, step=1)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Weight'), dbc.Input(id='input-weight', disabled=True, type="number", min=40, max=150, step=0.1)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Estimated bodyfat %'), dbc.Input(id='input-bf', disabled=True, type="number", min=5, max=40, step=1)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Lean mass'), dbc.Input(id='input-lean-mass', disabled=True, type="text")
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Fat mass'), dbc.Input(id='input-fat-mass', disabled=True, type="text")
-    ], class_name ='mb-2', size='sm'),
-    dbc.Button('Update results', id='bmr-calculate', n_clicks=0, size='sm', disabled=True),
-    html.Br(),
     html.H4(id='weight-line-chart-title', style={'color' : 'green', 'text-align' : 'center'}),        
-    html.Div(id='weight-line-chart', className="m-4")
-])
-
-# energy needs table
-energy_needs = html.Div([
-    html.Br(),
-    html.H4('Energy', style={'color' : 'green', 'text-align' : 'center'}),
-    dbc.InputGroup([
-        dbc.InputGroupText('Calorie deficit'), dbc.Input(id='input-calorie-deficit', type="number", min=0, max=1000, step=100, value=0)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Plan duration in weeks'), dbc.Input(id='input-plan-duration', type="number", min=4, max=12, step=1, value=8)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Activity level'), dbc.Select(id='input-activity-level', options=[
-            {'label' : level, "value" : count} for count, level in enumerate(activity_levels)
-        ], value=3)
-    ], class_name ='mb-2', size='sm'),    
-    dbc.InputGroup([
-        dbc.InputGroupText('Projected total weight loss'), dbc.Input(id='input-estimated-weight-loss', disabled=True)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Projected new weight'), dbc.Input(id='input-estimated-new-weight', disabled=True)
-    ], class_name ='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Daily steps'), dbc.Input(id='input-daily-steps', type='text', disabled=True)
-    ], class_name ='mb-2', size='sm'),
-    html.Br(),
-    html.Div(id='bmr-result-calories'),
-    html.Br(),
-    html.Div(id='bmr-result-joules'),
-    html.Br(),
-    html.Div(id='table-energy-needs'),
-    html.Div(id='table-weight-loss'),
 ])
 
 # macros and weight loss tables
 macros = html.Div([
     html.Br(),
-    html.H4('Macronutrients', style={'color' : 'green', 'text-align' : 'center'}),
-    dbc.InputGroup([
-        dbc.InputGroupText('Protein per kg'),  dbc.Input(id='input-protein-kg', type="number", min=1, max=3, step=0.1, value=2)
-    ], class_name='mb-2', size='sm'),
-    dbc.InputGroup([
-        dbc.InputGroupText('Fat per kg'),  dbc.Input(id='input-fat-kg', type="number", min=0.5, max=1, step=0.1, value=1)
-    ], class_name='mb-2', size='sm'),
     # html.Br(),
     html.H4(id='pie-chart-title', style={'color' : 'green', 'text-align' : 'center'}),
     html.Br(),
-    html.Div(id='table-macros'),
-    html.Div(id='macros-pie-chart', className="m-4")
+
 ])
 
 # application layout
 app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
-            bmr_inputs
-        ], width=4),
+            inputs_body,
+        ], sm=12, md=8, lg=6, xl=5),
+    ], justify='center'),
+    dbc.Row([
         dbc.Col([
-            energy_needs
-        ], width=4),
+            results_calories,
+        ], sm=12, md=8, lg=6, xl=5),
+    ], justify='center'),
+    dbc.Row([
         dbc.Col([
-            macros
-        ], width=4),        
+            inputs_energy,
+        ], sm=12, md=8, lg=6, xl=5),
+    ], justify='center'),
+    dbc.Row([
+        dbc.Col([
+            results_tables
+        ], sm=12, md=8, lg=6, xl=5),
+    ], justify='center'),
+    dbc.Row([
+        dbc.Col([
+            results_weight_line_chart,
+        ], sm=12, md=8, lg=6, xl=5),
+    ], justify='center'), 
+    dbc.Row([
+        dbc.Col([
+            inputs_macros,
+        ], sm=12, md=8, lg=6, xl=5),
+    ], justify='center'),    
+    # junk
+    dbc.Row([
+        dbc.Col([
+            bmr_inputs, macros
+        ])
     ])
 ], fluid=True)
 
@@ -221,9 +296,13 @@ def calculate_bmr(bmr_formula_input_value, input_age_value, input_gender_value, 
     Output('pie-chart-title', 'children'),
     Output('input-daily-steps', 'value'),
     Output('weight-line-chart', 'children'),
-    Output('weight-line-chart-title', 'children'),
+    Output('results-weight-line-chart', 'style'),
     Output('input-estimated-weight-loss', 'value'),
     Output('input-estimated-new-weight', 'value'),
+    Output('results-calories', 'style'),
+    Output('inputs-energy', 'style'),
+    Output('inputs-macros', 'style'),
+    Output('results-tables', 'style'),
     Input('bmr-calculate', 'n_clicks'),
     Input('input-calorie-deficit', 'value'),
     Input('input-activity-level', 'value'),
@@ -305,15 +384,16 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
             weight_loss_table(wl_headers, bmr_result, activity_level=_activity_levels[int(activity_level_value)], deficit=deficit_value),\
             macros_table(macro_headers, bmr_result, weight=input_weight, protein_kg=protein_kg_value, fat_kg=fat_kg_value,\
                           activity_level=_activity_levels[int(activity_level_value)], deficit=deficit_value),\
-            html.H4('{0:,.0f} kcal'.format(calories_result), style={'color' : 'blue', 'text-align' : 'center'}),\
-            html.H4('{0:,.0f} kJ'.format(calories_result*4.184), style={'color' : 'blue', 'text-align' : 'center'}),\
-            html.Div(dcc.Graph(figure=macros_fig), style={'border' : '1px grey dotted'}),\
+            '{0:,.0f} kcal'.format(calories_result),\
+            '{0:,.0f} kJ'.format(calories_result*4.184),\
+            html.Div(dcc.Graph(figure=macros_fig)),\
             '',\
             '{0:,.0f}'.format(max(calories_to_steps(calories_result-(bmr_result*1.2), input_weight),0)),\
-            html.Div(dcc.Graph(figure=fig_weight, config={'displayModeBar': False}, style={'border' : '1px grey dotted'})),\
-            'Projected weekly bodyweight',\
+            html.Div(dcc.Graph(figure=fig_weight, config={'displayModeBar': False})),\
+            {'display' : 'block'},\
             '{0:,.1f} kg'.format(weekly_weight_loss(deficit_value) * plan_duration_value),\
-            '{0:,.1f} kg'.format(input_weight - weekly_weight_loss(deficit_value) * plan_duration_value)
+            '{0:,.1f} kg'.format(input_weight - weekly_weight_loss(deficit_value) * plan_duration_value),\
+            *[{'display' : 'block'} for i in range(4)]
     return \
         html.Br(),\
         html.Br(),\
@@ -324,9 +404,10 @@ def calculate_bmr(n_clicks, deficit_value, activity_level_value, protein_kg_valu
         '',\
         '',\
         html.Br(),\
+        {'display' : 'none'},\
         '',\
         '',\
-        ''
+        *[{'display' : 'none'} for i in range(4)]
 
 # disable input buttons if no proper input is available
 @app.callback(
@@ -343,5 +424,5 @@ def disable_buttons(bmr_calculated_disabled):
     return [False for _ in range(5)]
 
 # uncomment below for development and debugging
-# if __name__ == '__main__':
-#     app.run_server(port='8051', host='0.0.0.0', debug=True)
+if __name__ == '__main__':
+    app.run_server(port='8051', host='0.0.0.0', debug=True)

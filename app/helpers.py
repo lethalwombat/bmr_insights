@@ -28,14 +28,14 @@ def bmr_engine(**kwargs) -> float:
         return 370 + 21.6 * (1-kwargs.get('bf')/100) * kwargs.get('weight')
     return -1
 
-def blank_table(headers: list, rows:int, bordered=True):
+def blank_table(headers: list, rows:int, bordered=False):
     table_header = generate_table_header(headers)
     table_body = [html.Tbody([
             blank_row(len(headers)) for _ in range(rows)])
         ]
     return dbc.Table(table_header + table_body, bordered=bordered)
 
-def bmr_results_table(headers: list, bmr_result: int, deficit=500, bordered=True):
+def bmr_results_table(headers: list, bmr_result: int, deficit=500, bordered=False):
     # generate headers
     table_header = generate_table_header(headers)
 
@@ -47,7 +47,7 @@ def bmr_results_table(headers: list, bmr_result: int, deficit=500, bordered=True
     return dbc.Table(table_header + table_body, bordered=bordered)
 
 
-def macros_table(headers: list, bmr_result: int, deficit=500, weight=90, activity_level='Moderately active (1.55)', protein_kg=1, fat_kg=1, bordered=True):
+def macros_table(headers: list, bmr_result: int, deficit=500, weight=90, activity_level='Moderately active (1.55)', protein_kg=1, fat_kg=1, bordered=False):
     # calculate macros
     energy_total = bmr_result * activity_levels.get(activity_level) - deficit
     energy_protein = weight * protein_kg * 4
@@ -66,7 +66,7 @@ def macros_table(headers: list, bmr_result: int, deficit=500, weight=90, activit
 def weekly_weight_loss(deficit: int):
     return (deficit * 7) / 7700
 
-def weight_loss_table(headers: list, bmr_result: int, deficit=500, activity_level='Moderately active (1.55)', bordered=True):
+def weight_loss_table(headers: list, bmr_result: int, deficit=500, activity_level='Moderately active (1.55)', bordered=False):
     # calculate metrics
     _weekly_weight_loss = weekly_weight_loss(deficit)
     energy_deficit = deficit / (bmr_result * activity_levels.get(activity_level))
